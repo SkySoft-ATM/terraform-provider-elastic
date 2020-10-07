@@ -34,10 +34,12 @@ func TestCreatePipeline(t *testing.T) {
 	client := NewClient(os.Getenv("CLOUD_AUTH"), "https://80128f85e27c4ed8bab925c5cc6b811c.europe-west1.gcp.cloud.es.io:9243")
 	res, err := client.GetLogstashPipeline(context.Background(), "test")
 
-	assert.Equal(t, nil, err, "No error should be sent")
-	assert.Equal(t, pipelineRef.ID, res.ID)
-	assert.Equal(t, pipelineRef.Description, res.Description)
-	assert.Equal(t, pipelineRef.Username, res.Username)
-	assert.Equal(t, pipelineRef.Settings, res.Settings)
-	assert.Equal(t, pipelineRef.Pipeline, res.Pipeline)
+	assert.Nil(t, err, "expecting nil error")
+	assert.NotNil(t, res, "expecting non-nil result")
+
+	assert.Equal(t, pipelineRef.ID, res.ID, "expecting same IDs")
+	assert.Equal(t, pipelineRef.Description, res.Description, "expecting same description")
+	assert.Equal(t, pipelineRef.Username, res.Username, "expecting same username")
+	assert.Equal(t, pipelineRef.Settings, res.Settings, "expecting same settings")
+	assert.Equal(t, pipelineRef.Pipeline, res.Pipeline, "expecting same pipeline definition")
 }

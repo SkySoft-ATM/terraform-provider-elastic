@@ -12,7 +12,7 @@ import (
 
 // Client is the high-level structure to interact with Elastic API
 type Client struct {
-	KibanaURL  string
+	BaseURL    string
 	cloudAuth  string
 	HTTPClient *http.Client
 }
@@ -47,7 +47,7 @@ type LogstashPipeline struct {
 // NewClient instantiates a new HTTP client
 func NewClient(cloudAuth string, kibanaURL string) *Client {
 	return &Client{
-		KibanaURL: kibanaURL,
+		BaseURL:   fmt.Sprintf("%s/api/logstash/pipeline", kibanaURL),
 		cloudAuth: cloudAuth,
 		HTTPClient: &http.Client{
 			Timeout: time.Minute,
@@ -57,7 +57,7 @@ func NewClient(cloudAuth string, kibanaURL string) *Client {
 
 // GetLogstashPipeline retrieve the pipeline identified with the unique ID
 func (c *Client) GetLogstashPipeline(ctx context.Context, ID string) (*LogstashPipeline, error) {
-	req, err := http.NewRequest("GET", fmt.Sprintf("%s/api/logstash/pipeline/%s", c.KibanaURL, ID), nil)
+	req, err := http.NewRequest("GET", fmt.Sprintf("%s/%s", c.BaseURL, ID), nil)
 	if err != nil {
 		return nil, err
 	}
