@@ -3,9 +3,9 @@ package elastic
 import (
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
 	"github.com/hashicorp/terraform-plugin-sdk/terraform"
-	"gopkg.in/resty.v2"
 )
 
+// Provider is used by terraform to instantiate Provider object
 func Provider() terraform.ResourceProvider {
 	return &schema.Provider{
 		Schema: map[string]*schema.Schema{
@@ -22,10 +22,10 @@ func Provider() terraform.ResourceProvider {
 				DefaultFunc: schema.EnvDefaultFunc("KIBANA_HOST", nil),
 			},
 		},
-		ResourceMap: map[string]*schema.Resource{
+		ResourcesMap: map[string]*schema.Resource{
 			"logstash_pipeline": resourceLogstashPipeline(),
 		},
-		DataSourceMap: map[string]*schema.Resource{
+		DataSourcesMap: map[string]*schema.Resource{
 			"logstash_pipeline": dataSourceLogstashPipeline(),
 		},
 		ConfigureFunc: configureFunc(),
@@ -34,7 +34,6 @@ func Provider() terraform.ResourceProvider {
 
 func configureFunc() func(*schema.ResourceData) (interface{}, error) {
 	return func(d *schema.ResourceData) (interface{}, error) {
-		client := resty.New()
-		return client, nil
+		return nil, nil
 	}
 }
