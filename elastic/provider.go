@@ -9,15 +9,15 @@ import (
 func Provider() terraform.ResourceProvider {
 	return &schema.Provider{
 		Schema: map[string]*schema.Schema{
-			"api_key": &schema.Schema{
+			"api_key": {
 				Type:        schema.TypeString,
 				Description: "Your elastic API key",
 				Required:    true,
 				DefaultFunc: schema.EnvDefaultFunc("ELASTIC_CLOUD", nil),
 			},
-			"kibana_host": &schema.Schema{
+			"kibana_url": {
 				Type:        schema.TypeString,
-				Description: "Kibana host",
+				Description: "Kibana URL",
 				Required:    true,
 				DefaultFunc: schema.EnvDefaultFunc("KIBANA_HOST", nil),
 			},

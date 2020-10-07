@@ -5,19 +5,19 @@ import "github.com/hashicorp/terraform-plugin-sdk/helper/schema"
 func resourceLogstashPipeline() *schema.Resource {
 	return &schema.Resource{
 		Schema: map[string]*schema.Schema{
-			"id": &schema.Schema{
+			"id": {
 				Type:     schema.TypeString,
 				Required: true,
 			},
-			"pipeline": &schema.Schema{
+			"pipeline": {
 				Type:     schema.TypeString,
 				Required: false,
 			},
-			"settings": &schema.Schema{
+			"settings": {
 				Type:     schema.TypeString,
 				Optional: false,
 			},
-			"description": &schema.Schema{
+			"description": {
 				Type:     schema.TypeString,
 				Optional: false,
 			},

@@ -3,13 +3,15 @@ package elastic
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 	"os"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
 )
 
-var refPipeline = []byte(`{
+var (
+	refPipeline = []byte(`{
 		"id": "test",
 		"description": "Used to test terraform provider",
 		"username": "chambodn@skysoft-atm.com",
@@ -23,15 +25,19 @@ var refPipeline = []byte(`{
 			"queue.type": "persistent"
 		}
 	}`)
+	client      *Client
+	pipelineRef LogstashPipeline
+)
 
-func TestCreatePipeline(t *testing.T) {
-	var pipelineRef LogstashPipeline
+func init() {
+	client = NewClient(os.Getenv("CLOUD_AUTH"), "https://80128f85e27c4ed8bab925c5cc6b811c.europe-west1.gcp.cloud.es.io:9243")
 	err := json.Unmarshal(refPipeline, &pipelineRef)
 	if err != nil {
-		t.Error(err.Error())
+		fmt.Errorf("error trying to load pipeline definition %s", err.Error())
 	}
+}
 
-	client := NewClient(os.Getenv("CLOUD_AUTH"), "https://80128f85e27c4ed8bab925c5cc6b811c.europe-west1.gcp.cloud.es.io:9243")
+func TestGetPipeline(t *testing.T) {
 	res, err := client.GetLogstashPipeline(context.Background(), "test")
 
 	assert.Nil(t, err, "expecting nil error")
@@ -42,4 +48,25 @@ func TestCreatePipeline(t *testing.T) {
 	assert.Equal(t, pipelineRef.Username, res.Username, "expecting same username")
 	assert.Equal(t, pipelineRef.Settings, res.Settings, "expecting same settings")
 	assert.Equal(t, pipelineRef.Pipeline, res.Pipeline, "expecting same pipeline definition")
+}
+
+func TestCreatePipeline(t *testing.T) {
+	settings := NewLogstashPipelineSettings(50, 125, 1, 1024, "1gb", "memory")
+	logstashPipeline := NewLogstashPipeline("", "Used to test terraform provider", "Test pipeline", settings)
+	err := client.CreateLogstashPipeline(context.Background(), logstashPipeline, "empty")
+
+	assert.Nil(t, err, "expecting nil error")
+}
+
+func TestUpdatePipeline(t *testing.T) {
+	settings := NewLogstashPipelineSettings(50, 125, 1, 1024, "1gb", "memory")
+	logstashPipeline := NewLogstashPipeline("", "Used to test terraform provider", "Test pipeline", settings)
+	err := client.UpdateLogstashPipeline(context.Background(), logstashPipeline, "empty")
+
+	assert.Nil(t, err, "expecting nil error")
+}
+
+func TestDeletePipeline(t *testing.T) {
+	err := client.DeleteLogstashPipeline(context.Background(), "empty")
+	assert.Nil(t, err, "expecting nil error")
 }
