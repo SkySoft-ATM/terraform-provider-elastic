@@ -1,9 +1,12 @@
 package main
 
+import (
+	"github.com/hashicorp/terraform/plugin"
+	"github.com/skysoft-atm/terraform-provider-elastic/elastic"
+)
+
 func main() {
-
-}
-
-func providerConfigure() (interface{}, error) {
-	return nil, nil
+	plugin.Serve(&plugin.ServeOpts{
+		ProviderFunc: elastic.Provider,
+	})
 }

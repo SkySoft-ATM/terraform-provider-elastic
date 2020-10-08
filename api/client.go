@@ -1,4 +1,4 @@
-package elastic
+package api
 
 import (
 	"bytes"
@@ -7,7 +7,6 @@ import (
 	"errors"
 	"fmt"
 	"net/http"
-	"strings"
 	"time"
 )
 
@@ -94,27 +93,6 @@ func (c *Client) GetLogstashPipeline(ctx context.Context, ID string) (*LogstashP
 	return &res, nil
 }
 
-// UpdateLogstashPipeline updates a specific logstash pipeline
-func (c *Client) UpdateLogstashPipeline(ctx context.Context, logstashPipeline *LogstashPipeline, ID string) error {
-	// marshal LogstashPipeline to json
-	json, err := json.Marshal(logstashPipeline)
-	if err != nil {
-		return err
-	}
-
-	req, err := http.NewRequest(http.MethodPut, fmt.Sprintf("%s/%s", c.BaseURL, ID), bytes.NewBuffer(json))
-	if err != nil {
-		return err
-	}
-
-	req = req.WithContext(ctx)
-
-	if err := c.sendRequest(req, nil); err != nil {
-		return err
-	}
-	return nil
-}
-
 // DeleteLogstashPipeline deletes a specific logstash pipeline
 func (c *Client) DeleteLogstashPipeline(ctx context.Context, ID string) error {
 	req, err := http.NewRequest(http.MethodDelete, fmt.Sprintf("%s/%s", c.BaseURL, ID), nil)
@@ -130,8 +108,8 @@ func (c *Client) DeleteLogstashPipeline(ctx context.Context, ID string) error {
 	return nil
 }
 
-// CreateLogstashPipeline creates a specific logstash pipeline
-func (c *Client) CreateLogstashPipeline(ctx context.Context, logstashPipeline *LogstashPipeline, ID string) error {
+// CreateOrUpdateLogstashPipeline creates/updates a specific logstash pipeline
+func (c *Client) CreateOrUpdateLogstashPipeline(ctx context.Context, logstashPipeline *LogstashPipeline, ID string) error {
 	// marshal LogstashPipeline to json
 	json, err := json.Marshal(logstashPipeline)
 	if err != nil {
@@ -156,8 +134,12 @@ func (c *Client) sendRequest(req *http.Request, v interface{}) error {
 	req.Header.Set("Accept", "application/json")
 	req.Header.Set("kbn-xsrf", "true")
 	req.Header.Set("Cache-Control", "no-cache")
-	auth := strings.Split(c.cloudAuth, ":")
-	req.SetBasicAuth(auth[0], auth[1])
+
+	username, password, err := utils.parseTwoPartID(c.cloudAuth, "username", "password")
+	if err != nil {
+		return err
+	}
+	req.SetBasicAuth(username, password)
 
 	res, err := c.HTTPClient.Do(req)
 	if err != nil {

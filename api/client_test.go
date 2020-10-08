@@ -1,9 +1,8 @@
-package elastic
+package api
 
 import (
 	"context"
 	"encoding/json"
-	"fmt"
 	"os"
 	"testing"
 
@@ -33,7 +32,7 @@ func init() {
 	client = NewClient(os.Getenv("CLOUD_AUTH"), "https://80128f85e27c4ed8bab925c5cc6b811c.europe-west1.gcp.cloud.es.io:9243")
 	err := json.Unmarshal(refPipeline, &pipelineRef)
 	if err != nil {
-		fmt.Errorf("error trying to load pipeline definition %s", err.Error())
+		panic("error trying to load pipeline definition")
 	}
 }
 
@@ -53,7 +52,7 @@ func TestGetPipeline(t *testing.T) {
 func TestCreatePipeline(t *testing.T) {
 	settings := NewLogstashPipelineSettings(50, 125, 1, 1024, "1gb", "memory")
 	logstashPipeline := NewLogstashPipeline("", "Used to test terraform provider", "Test pipeline", settings)
-	err := client.CreateLogstashPipeline(context.Background(), logstashPipeline, "empty")
+	err := client.CreateOrUpdateLogstashPipeline(context.Background(), logstashPipeline, "empty")
 
 	assert.Nil(t, err, "expecting nil error")
 }
@@ -61,7 +60,7 @@ func TestCreatePipeline(t *testing.T) {
 func TestUpdatePipeline(t *testing.T) {
 	settings := NewLogstashPipelineSettings(50, 125, 1, 1024, "1gb", "memory")
 	logstashPipeline := NewLogstashPipeline("", "Used to test terraform provider", "Test pipeline", settings)
-	err := client.UpdateLogstashPipeline(context.Background(), logstashPipeline, "empty")
+	err := client.CreateOrUpdateLogstashPipeline(context.Background(), logstashPipeline, "empty")
 
 	assert.Nil(t, err, "expecting nil error")
 }
