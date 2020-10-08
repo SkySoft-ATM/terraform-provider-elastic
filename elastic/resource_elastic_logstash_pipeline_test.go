@@ -54,7 +54,7 @@ func testAccCheckLogstashDestroy(s *terraform.State) error {
 func testAccCheckLogstashPipelineConfigBasic(id, description string) string {
 	return fmt.Sprintf(`
 	resource "logstash_pipeline" "test" {
-		logstash_id = "%s"
+		pipeline_id = "%s"
 		description = "%s"
 	}
 	`, id, description)
@@ -87,8 +87,8 @@ func testAccCheckLogstashPipelineExists(n string, pipeline *api.LogstashPipeline
 
 func testAccCheckLogstashPipelineAttributes(pipeline *api.LogstashPipeline, pipelineDef string) resource.TestCheckFunc {
 	return func(s *terraform.State) error {
-		if pipeline.Description != pipelineDef {
-			return fmt.Errorf("Description does not match: %s", pipeline.Description)
+		if pipeline.Pipeline != pipelineDef {
+			return fmt.Errorf("Description does not match: %s", pipeline.Pipeline)
 		}
 		return nil
 	}

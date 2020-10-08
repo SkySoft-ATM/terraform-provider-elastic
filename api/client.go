@@ -8,6 +8,8 @@ import (
 	"fmt"
 	"net/http"
 	"time"
+
+	"github.com/skysoft-atm/terraform-provider-elastic/utils"
 )
 
 // Client is the high-level structure to interact with Elastic API
@@ -135,7 +137,7 @@ func (c *Client) sendRequest(req *http.Request, v interface{}) error {
 	req.Header.Set("kbn-xsrf", "true")
 	req.Header.Set("Cache-Control", "no-cache")
 
-	username, password, err := utils.parseTwoPartID(c.cloudAuth, "username", "password")
+	username, password, err := utils.ParseTwoPartID(c.cloudAuth, "username", "password")
 	if err != nil {
 		return err
 	}

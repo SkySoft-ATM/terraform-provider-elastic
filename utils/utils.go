@@ -7,7 +7,8 @@ import (
 	"github.com/hashicorp/terraform/helper/schema"
 )
 
-func validateValueFunc(values []string) schema.SchemaValidateFunc {
+// ValidateValueFunc check arguments based on list of strings
+func ValidateValueFunc(values []string) schema.SchemaValidateFunc {
 	return func(v interface{}, k string) (we []string, errors []error) {
 		value := v.(string)
 		valid := false
@@ -25,8 +26,8 @@ func validateValueFunc(values []string) schema.SchemaValidateFunc {
 	}
 }
 
-// return the pieces of id `left:right` as left, right
-func parseTwoPartID(id, left, right string) (string, string, error) {
+// ParseTwoPartID returns the pieces of id `left:right` as left, right
+func ParseTwoPartID(id, left, right string) (string, string, error) {
 	parts := strings.SplitN(id, ":", 2)
 	if len(parts) != 2 {
 		return "", "", fmt.Errorf("Unexpected ID format (%q). Expected %s:%s", id, left, right)

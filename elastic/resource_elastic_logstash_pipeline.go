@@ -5,6 +5,7 @@ import (
 
 	"github.com/hashicorp/terraform/helper/schema"
 	"github.com/skysoft-atm/terraform-provider-elastic/api"
+	"github.com/skysoft-atm/terraform-provider-elastic/utils"
 )
 
 func resourceLogstashPipeline() *schema.Resource {
@@ -45,7 +46,7 @@ func resourceLogstashPipeline() *schema.Resource {
 			"queue_type": {
 				Type:         schema.TypeString,
 				Optional:     true,
-				ValidateFunc: utils.validateValueFunc([]string{"memory", "persisted"}),
+				ValidateFunc: utils.ValidateValueFunc([]string{"memory", "persisted"}),
 			},
 		},
 		Create: resourceLogstashPipelineCreate,
