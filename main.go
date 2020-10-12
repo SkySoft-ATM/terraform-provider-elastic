@@ -1,7 +1,7 @@
 package main
 
 import (
-	"github.com/hashicorp/terraform/plugin"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/plugin"
 	"github.com/skysoft-atm/terraform-provider-elastic/elastic"
 )
 
