@@ -12,7 +12,7 @@ func dataSourceLogstashPipeline() *schema.Resource {
 	return &schema.Resource{
 		ReadContext: dataSourceLogstashPipelineRead,
 		Schema: map[string]*schema.Schema{
-			"id": {
+			"pipeline_id": {
 				Type:     schema.TypeString,
 				Required: true,
 			},
@@ -29,19 +29,19 @@ func dataSourceLogstashPipeline() *schema.Resource {
 				Computed: true,
 			},
 			"settings": {
-				Type:     schema.TypeSet,
+				Type:     schema.TypeList,
 				Computed: true,
 				Elem: &schema.Resource{
 					Schema: map[string]*schema.Schema{
-						"pipeline_batch_delay": {
+						"batch_delay": {
 							Type:     schema.TypeInt,
 							Computed: true,
 						},
-						"pipeline_batch_size": {
+						"batch_size": {
 							Type:     schema.TypeInt,
 							Computed: true,
 						},
-						"pipeline_workers": {
+						"workers": {
 							Type:     schema.TypeInt,
 							Computed: true,
 						},
@@ -72,13 +72,15 @@ func dataSourceLogstashPipelineRead(ctx context.Context, d *schema.ResourceData,
 
 	id := d.Get("pipeline_id").(string)
 	pipeline, err := c.GetLogstashPipeline(ctx, id)
-	pl := flattenLogstashPipelineData(pipeline)
-	for key, value := range pl {
-		d.Set(key, value)
-	}
-
 	if err != nil {
 		return diag.FromErr(err)
+	}
+
+	pl := flattenLogstashPipelineData(pipeline)
+	for key, value := range pl {
+		if err := d.Set(key, value); err != nil {
+			diag.FromErr(err)
+		}
 	}
 
 	d.SetId(pipeline.ID)
@@ -89,17 +91,22 @@ func dataSourceLogstashPipelineRead(ctx context.Context, d *schema.ResourceData,
 func flattenLogstashPipelineData(pipeline *api.LogstashPipeline) map[string]interface{} {
 	lp := make(map[string]interface{})
 	if pipeline != nil {
-
 		lp["pipeline_id"] = pipeline.ID
-		lp["pipeline_description"] = pipeline.Description
-		lp["pipeline_username"] = pipeline.Username
+		lp["description"] = pipeline.Description
+		lp["username"] = pipeline.Username
 		lp["pipeline"] = pipeline.Pipeline
-		lp["pipeline_workers"] = pipeline.Settings.PipelineWorkers
-		lp["pipeline_batch_size"] = pipeline.Settings.PipelineBatchSize
-		lp["pipeline_batch_delay"] = pipeline.Settings.PipelineBatchDelay
-		lp["queue_checkpoint_writes"] = pipeline.Settings.QueueCheckpointWrites
-		lp["queue_max_bytes"] = pipeline.Settings.QueueMaxBytes
-		lp["queue_type"] = pipeline.Settings.QueueType
+		lp["settings"] = flattenSettings(pipeline.Settings)
 	}
 	return lp
+}
+
+func flattenSettings(settings *api.Settings) []interface{} {
+	s := make(map[string]interface{})
+	s["workers"] = settings.PipelineWorkers
+	s["batch_size"] = settings.PipelineBatchSize
+	s["batch_delay"] = settings.PipelineBatchDelay
+	s["queue_checkpoint_writes"] = settings.QueueCheckpointWrites
+	s["queue_max_bytes"] = settings.QueueMaxBytes
+	s["queue_type"] = settings.QueueType
+	return []interface{}{s}
 }

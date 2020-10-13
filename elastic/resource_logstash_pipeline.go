@@ -2,7 +2,8 @@ package elastic
 
 import (
 	"context"
-	"time"
+	"fmt"
+	"log"
 
 	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
@@ -26,21 +27,22 @@ func resourceLogstashPipeline() *schema.Resource {
 				Optional: true,
 			},
 			"settings": {
-				Type:     schema.TypeSet,
+				Type:     schema.TypeList,
+				MaxItems: 1,
 				Optional: true,
 				Elem: &schema.Resource{
 					Schema: map[string]*schema.Schema{
-						"pipeline_batch_delay": {
+						"batch_delay": {
 							Type:         schema.TypeInt,
 							Optional:     true,
 							ValidateFunc: utils.IntAtLeast(1),
 						},
-						"pipeline_batch_size": {
+						"batch_size": {
 							Type:         schema.TypeInt,
 							Optional:     true,
 							ValidateFunc: utils.IntAtLeast(1),
 						},
-						"pipeline_workers": {
+						"workers": {
 							Type:         schema.TypeInt,
 							Optional:     true,
 							ValidateFunc: utils.IntAtLeast(1),
@@ -76,14 +78,18 @@ func resourceLogstashPipelineCreate(ctx context.Context, d *schema.ResourceData,
 	// Warning on errors can be collected in a slice type
 	var diags diag.Diagnostics
 
-	data := pipelineLogstashData(d)
-
-	err := c.CreateOrUpdateLogstashPipeline(ctx, &data, data.ID)
+	data, err := pipelineLogstashData(d)
 	if err != nil {
 		return diag.FromErr(err)
 	}
+	log.Printf("YOUHOU : %v", data)
+	err = c.CreateOrUpdateLogstashPipeline(ctx, &data, data.ID)
+	if err != nil {
+		log.Printf("Error : %s", err.Error())
+		return diag.FromErr(err)
+	}
 	d.SetId(data.ID)
-
+	log.Printf("Everything is good")
 	return diags
 }
 
@@ -102,7 +108,9 @@ func resourceLogstashPipelineRead(ctx context.Context, d *schema.ResourceData, m
 
 	pl := flattenLogstashPipelineData(pipeline)
 	for key, value := range pl {
-		d.Set(key, value)
+		if err := d.Set(key, value); err != nil {
+			diag.FromErr(err)
+		}
 	}
 
 	return diags
@@ -113,15 +121,15 @@ func resourceLogstashPipelineUpdate(ctx context.Context, d *schema.ResourceData,
 
 	id := d.Id()
 
-	if d.HasChange("description") || d.HasChange("pipeline") || d.HasChange("username") || d.HasChange("pipeline_batch_delay") ||
-		d.HasChange("pipeline_batch_size") || d.HasChange("pipeline_workers") || d.HasChange("queue_checkpoint_writes") ||
-		d.HasChange("queue_max_bytes") || d.HasChange("queue_type") {
-		data := pipelineLogstashData(d)
-		err := c.CreateOrUpdateLogstashPipeline(ctx, &data, id)
+	if d.HasChange("description") || d.HasChange("pipeline") || d.HasChange("username") || d.HasChange("settings") {
+		data, err := pipelineLogstashData(d)
 		if err != nil {
 			return diag.FromErr(err)
 		}
-		d.Set("last_updated", time.Now().Format(time.RFC850))
+		err = c.CreateOrUpdateLogstashPipeline(ctx, &data, id)
+		if err != nil {
+			return diag.FromErr(err)
+		}
 	}
 	return resourceLogstashPipelineRead(ctx, d, m)
 }
@@ -145,8 +153,14 @@ func resourceLogstashPipelineDelete(ctx context.Context, d *schema.ResourceData,
 	return diags
 }
 
-func pipelineLogstashData(d *schema.ResourceData) api.LogstashPipeline {
+func pipelineLogstashData(d *schema.ResourceData) (api.LogstashPipeline, error) {
 	data := api.LogstashPipeline{}
+	pipelineID := d.Get("pipeline_id").(string)
+	if len(pipelineID) == 0 {
+		return data, fmt.Errorf("pipeline_id must be defined")
+	}
+	data.ID = pipelineID
+
 	if v, ok := d.GetOk("description"); ok {
 		data.Description = v.(string)
 	}
@@ -156,32 +170,16 @@ func pipelineLogstashData(d *schema.ResourceData) api.LogstashPipeline {
 	}
 
 	settings := api.Settings{}
-	// if v, ok := d.GetOk("settings"); ok {
-
-	// }
-	if v, ok := d.GetOk("pipeline_batch_delay"); ok {
-		settings.PipelineBatchDelay = v.(int)
-	}
-
-	if v, ok := d.GetOk("pipeline_batch_size"); ok {
-		settings.PipelineBatchSize = v.(int)
-	}
-
-	if v, ok := d.GetOk("pipeline_workers"); ok {
-		settings.PipelineWorkers = v.(int)
-	}
-
-	if v, ok := d.GetOk("queue_checkpoint_writes"); ok {
-		settings.QueueCheckpointWrites = v.(int)
-	}
-
-	if v, ok := d.GetOk("queue_max_bytes"); ok {
-		settings.QueueMaxBytes = v.(string)
-	}
-
-	if v, ok := d.GetOk("queue_type"); ok {
-		settings.QueueType = v.(string)
+	vSettings := d.Get("settings").([]interface{})
+	for _, item := range vSettings {
+		i := item.(map[string]interface{})
+		settings.PipelineBatchDelay = i["batch_delay"].(int)
+		settings.PipelineWorkers = i["workers"].(int)
+		settings.PipelineBatchSize = i["batch_size"].(int)
+		settings.QueueCheckpointWrites = i["queue_checkpoint_writes"].(int)
+		settings.QueueMaxBytes = i["queue_max_bytes"].(string)
+		settings.QueueType = i["queue_type"].(string)
 	}
 	data.Settings = &settings
-	return data
+	return data, nil
 }

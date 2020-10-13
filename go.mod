@@ -7,6 +7,7 @@ require (
 	github.com/aws/aws-sdk-go v1.31.9 // indirect
 	github.com/hashicorp/hcl/v2 v2.6.0 // indirect
 	github.com/hashicorp/terraform-plugin-sdk/v2 v2.0.4
+	github.com/jinzhu/copier v0.0.0-20190924061706-b57f9002281a
 	github.com/mitchellh/go-testing-interface v1.14.1 // indirect
 	github.com/stretchr/testify v1.6.1
 	github.com/zclconf/go-cty v1.5.1 // indirect

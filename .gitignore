@@ -16,3 +16,4 @@
 terraform-provider-elastic
 
 .terraform/
+*tfstate*

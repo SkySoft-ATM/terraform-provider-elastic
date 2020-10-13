@@ -6,8 +6,11 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"log"
 	"net/http"
 	"time"
+
+	"github.com/jinzhu/copier"
 
 	"github.com/skysoft-atm/terraform-provider-elastic/utils"
 )
@@ -112,8 +115,17 @@ func (c *Client) DeleteLogstashPipeline(ctx context.Context, ID string) error {
 
 // CreateOrUpdateLogstashPipeline creates/updates a specific logstash pipeline
 func (c *Client) CreateOrUpdateLogstashPipeline(ctx context.Context, logstashPipeline *LogstashPipeline, ID string) error {
+	// Trick to avoid "definition for this key is missing exception"
+	pipeline := LogstashPipeline{}
+
+	if len(logstashPipeline.ID) > 0 {
+		copier.Copy(&pipeline, logstashPipeline)
+		pipeline.ID = ""
+	}
+
 	// marshal LogstashPipeline to json
-	json, err := json.Marshal(logstashPipeline)
+	json, err := json.Marshal(&pipeline)
+	log.Printf("Voici le message en JSON %s", json)
 	if err != nil {
 		return err
 	}
@@ -122,6 +134,7 @@ func (c *Client) CreateOrUpdateLogstashPipeline(ctx context.Context, logstashPip
 	if err != nil {
 		return err
 	}
+	log.Printf("Voici la requete %v", req)
 
 	req = req.WithContext(ctx)
 
