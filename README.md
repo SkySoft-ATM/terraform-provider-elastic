@@ -25,3 +25,28 @@ terraform init -upgrade
 ```
 to upgrade to the latest stable version of the elastic provider. 
 
+Creating pipeline resources
+----------------------
+```hcl
+resource "elastic_logstash_pipeline" "test" {
+  pipeline_id = "test"
+  pipeline = "input { stdin {} } output { stdout {} }"
+  description = "My so great pipeline"
+  settings { // Required even if empty (default values will be used)
+	batch_delay				= 50
+    batch_size 				= 125
+	workers 				= 1
+	queue_checkpoint_writes = 1024
+	queue_max_bytes 		= "1gb"
+	queue_type 				= "memory"
+  } 
+}
+```
+
+Using data sources
+----------------------
+```hcl
+data "elastic_logstash_pipeline" "filebeat" {
+  pipeline_id = "filebeat"
+}
+```

@@ -73,7 +73,15 @@ func testAccCheckElasticLogstashPipelineConfigBasic(id, pipeline, description st
 		pipeline_id = "%s"
 		pipeline 	= "%s"
 		description = "%s"
-		settings{}
+		settings{
+			batch_delay				= 50
+			batch_size 				= 125
+			workers 				= 1
+			queue_checkpoint_writes = 1024
+			queue_max_bytes 		= "1gb"
+			queue_type 				= "memory"
+
+		}
 	}
 	`, id, pipeline, description)
 }

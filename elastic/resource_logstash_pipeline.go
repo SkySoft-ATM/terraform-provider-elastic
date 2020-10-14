@@ -56,6 +56,7 @@ func resourceLogstashPipeline() *schema.Resource {
 						},
 						"batch_size": {
 							Type:         schema.TypeInt,
+							Default:      125,
 							Optional:     true,
 							ValidateFunc: utils.IntAtLeast(1),
 							Description: `This setting defines the maximum number of events an 
