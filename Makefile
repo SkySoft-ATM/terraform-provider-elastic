@@ -5,7 +5,7 @@ NAMESPACE=skysoft-atm
 BINARY=terraform-provider-${NAME}
 TF_ACC=1
 VERSION=0.0.1
-OS_ARCH=linux_amd64
+OS_ARCH=darwin_amd64
 
 default: install
 

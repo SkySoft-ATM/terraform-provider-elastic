@@ -13,20 +13,25 @@ func dataSourceLogstashPipeline() *schema.Resource {
 		ReadContext: dataSourceLogstashPipelineRead,
 		Schema: map[string]*schema.Schema{
 			"pipeline_id": {
-				Type:     schema.TypeString,
-				Required: true,
+				Type:        schema.TypeString,
+				Required:    true,
+				Description: `Pipeline name, must be unique.`,
 			},
 			"pipeline": {
 				Type:     schema.TypeString,
 				Computed: true,
+				Description: `Pipeline definition which will be used by logstash instances.
+				Should be composed by 3 sections (input, filter and output).`,
 			},
 			"description": {
-				Type:     schema.TypeString,
-				Computed: true,
+				Type:        schema.TypeString,
+				Computed:    true,
+				Description: `Pipeline description.`,
 			},
 			"username": {
-				Type:     schema.TypeString,
-				Computed: true,
+				Type:        schema.TypeString,
+				Computed:    true,
+				Description: `Token owner used for the pipeline creation.`,
 			},
 			"settings": {
 				Type:     schema.TypeList,
@@ -36,26 +41,40 @@ func dataSourceLogstashPipeline() *schema.Resource {
 						"batch_delay": {
 							Type:     schema.TypeInt,
 							Computed: true,
+							Description: `This setting adjusts the latency of the Logstash pipeline. 
+							Pipeline batch delay is the maximum amount of time in milliseconds that 
+							Logstash waits for new messages after receiving an event in the current 
+							pipeline worker thread.`,
 						},
 						"batch_size": {
 							Type:     schema.TypeInt,
 							Computed: true,
+							Description: `This setting defines the maximum number of events an 
+							individual worker thread collects before attempting to execute filters 
+							and outputs. Larger batch sizes are generally more efficient, but 
+							increase memory overhead.`,
 						},
 						"workers": {
 							Type:     schema.TypeInt,
 							Computed: true,
+							Description: `This setting determines how many threads to run for filter
+							and output processing.`,
 						},
 						"queue_checkpoint_writes": {
 							Type:     schema.TypeInt,
 							Computed: true,
+							Description: `This setting specifies the maximum number of events that
+							may be written to disk before forcing a checkpoint. `,
 						},
 						"queue_max_bytes": {
-							Type:     schema.TypeString,
-							Computed: true,
+							Type:        schema.TypeString,
+							Computed:    true,
+							Description: `The total capacity of the queue in number of bytes.`,
 						},
 						"queue_type": {
-							Type:     schema.TypeString,
-							Computed: true,
+							Type:        schema.TypeString,
+							Computed:    true,
+							Description: `Persistent mode for queues (persisted or memory).`,
 						},
 					},
 				},
@@ -71,19 +90,36 @@ func dataSourceLogstashPipelineRead(ctx context.Context, d *schema.ResourceData,
 	var diags diag.Diagnostics
 
 	id := d.Get("pipeline_id").(string)
-	pipeline, err := c.GetLogstashPipeline(ctx, id)
+
+	// API crashes if the pipeline_id is not known
+	// Let's first look if we can find it in a list
+	pipes, err := c.GetLogstashPipelines(ctx)
 	if err != nil {
 		return diag.FromErr(err)
 	}
 
-	pl := flattenLogstashPipelineData(pipeline)
-	for key, value := range pl {
-		if err := d.Set(key, value); err != nil {
-			diag.FromErr(err)
+	found := false
+	for _, p := range pipes.Pipelines {
+		if id == p.ID {
+			found = true
+			break
 		}
 	}
 
-	d.SetId(pipeline.ID)
+	if found {
+		pipeline, err := c.GetLogstashPipeline(ctx, id)
+		if err != nil {
+			return diag.FromErr(err)
+		}
+
+		pl := flattenLogstashPipelineData(pipeline)
+		for key, value := range pl {
+			if err := d.Set(key, value); err != nil {
+				diag.FromErr(err)
+			}
+		}
+	}
+	d.SetId(id)
 
 	return diags
 }
@@ -92,10 +128,10 @@ func flattenLogstashPipelineData(pipeline *api.LogstashPipeline) map[string]inte
 	lp := make(map[string]interface{})
 	if pipeline != nil {
 		lp["pipeline_id"] = pipeline.ID
-		lp["description"] = pipeline.Description
-		lp["username"] = pipeline.Username
-		lp["pipeline"] = pipeline.Pipeline
-		lp["settings"] = flattenSettings(pipeline.Settings)
+		lp["description"] = pipeline.Configuration.Description
+		lp["username"] = pipeline.Configuration.Username
+		lp["pipeline"] = pipeline.Configuration.Pipeline
+		lp["settings"] = flattenSettings(pipeline.Configuration.Settings)
 	}
 	return lp
 }

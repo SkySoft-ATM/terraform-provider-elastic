@@ -6,11 +6,11 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"log"
+	"io/ioutil"
 	"net/http"
+	"strings"
 	"time"
-
-	"github.com/jinzhu/copier"
+	"unicode/utf8"
 
 	"github.com/skysoft-atm/terraform-provider-elastic/utils"
 )
@@ -28,13 +28,28 @@ type errorResponse struct {
 	Message    string `json:"message"`
 }
 
+// LogstashPipelines object retrieved via the /pipelines directive
+type LogstashPipelines struct {
+	Pipelines []struct {
+		ID           string `json:"id"`
+		Description  string `json:"description,omitempty"`
+		LastModified string `json:"last_modified,omitempty"`
+		Username     string `json:"username"`
+	} `json:"pipelines"`
+}
+
 // LogstashPipeline object to be used with elastic API to define logstash pipelines
 // https://www.elastic.co/guide/en/kibana/current/logstash-configuration-management-api-create.html#logstash-configuration-management-api-create-request-body
 type LogstashPipeline struct {
-	ID          string    `json:"id,omitempty"`
+	ID            string                 `json:"id"`
+	Configuration *LogstashConfiguration `json:"config,omitempty"`
+}
+
+// LogstashConfiguration is the underlying struct sent via kibana API (ID should not be included)
+type LogstashConfiguration struct {
 	Description string    `json:"description,omitempty"`
 	Username    string    `json:"username,omitempty"`
-	Pipeline    string    `json:"pipeline,omitempty"`
+	Pipeline    string    `json:"pipeline"`
 	Settings    *Settings `json:"settings,omitempty"`
 }
 
@@ -51,10 +66,12 @@ type Settings struct {
 // NewLogstashPipeline returns a *LogstashPipeline struct
 func NewLogstashPipeline(id, description, pipeline string, settings *Settings) *LogstashPipeline {
 	return &LogstashPipeline{
-		ID:          id,
-		Description: description,
-		Pipeline:    pipeline,
-		Settings:    settings,
+		ID: id,
+		Configuration: &LogstashConfiguration{
+			Description: description,
+			Pipeline:    pipeline,
+			Settings:    settings,
+		},
 	}
 }
 
@@ -73,7 +90,7 @@ func NewLogstashPipelineSettings(batchDelay, batchSize, workers, queueCheckpoint
 // NewClient returns a new HTTP Client
 func NewClient(cloudAuth string, kibanaURL string) *Client {
 	return &Client{
-		BaseURL:   fmt.Sprintf("%s/api/logstash/pipeline", kibanaURL),
+		BaseURL:   kibanaURL,
 		cloudAuth: cloudAuth,
 		HTTPClient: &http.Client{
 			Timeout: time.Minute,
@@ -81,26 +98,59 @@ func NewClient(cloudAuth string, kibanaURL string) *Client {
 	}
 }
 
-// GetLogstashPipeline retrieve the pipeline identified with the unique ID
-func (c *Client) GetLogstashPipeline(ctx context.Context, ID string) (*LogstashPipeline, error) {
-	req, err := http.NewRequest(http.MethodGet, fmt.Sprintf("%s/%s", c.BaseURL, ID), nil)
+const (
+	crudBaseURL   = "/api/logstash/pipeline"
+	getAllBaseURL = "/api/logstash/pipelines"
+)
+
+// GetLogstashPipelines return the current list of pipelines
+func (c *Client) GetLogstashPipelines(ctx context.Context) (*LogstashPipelines, error) {
+	url := cleanURL(c.BaseURL, getAllBaseURL)
+
+	req, err := http.NewRequest(http.MethodGet, url, nil)
 	if err != nil {
 		return nil, err
 	}
 
 	req = req.WithContext(ctx)
 
-	res := LogstashPipeline{}
+	res := LogstashPipelines{}
+	if err := c.sendRequest(req, &res); err != nil {
+		return nil, err
+	}
+	return &res, nil
+}
+
+// GetLogstashPipeline retrieve the pipeline identified with the unique ID
+func (c *Client) GetLogstashPipeline(ctx context.Context, id string) (*LogstashPipeline, error) {
+	url := cleanURL(cleanURL(c.BaseURL, crudBaseURL), id)
+
+	req, err := http.NewRequest(http.MethodGet, url, nil)
+	if err != nil {
+		if err.Error() == "Not Found" {
+			return &LogstashPipeline{}, nil
+		}
+		return nil, err
+	}
+
+	req = req.WithContext(ctx)
+
+	res := LogstashConfiguration{}
 	if err := c.sendRequest(req, &res); err != nil {
 		return nil, err
 	}
 
-	return &res, nil
+	return &LogstashPipeline{
+		ID:            id,
+		Configuration: &res,
+	}, nil
 }
 
 // DeleteLogstashPipeline deletes a specific logstash pipeline
-func (c *Client) DeleteLogstashPipeline(ctx context.Context, ID string) error {
-	req, err := http.NewRequest(http.MethodDelete, fmt.Sprintf("%s/%s", c.BaseURL, ID), nil)
+func (c *Client) DeleteLogstashPipeline(ctx context.Context, id string) error {
+	url := cleanURL(cleanURL(c.BaseURL, crudBaseURL), id)
+
+	req, err := http.NewRequest(http.MethodDelete, url, nil)
 	if err != nil {
 		return err
 	}
@@ -114,27 +164,25 @@ func (c *Client) DeleteLogstashPipeline(ctx context.Context, ID string) error {
 }
 
 // CreateOrUpdateLogstashPipeline creates/updates a specific logstash pipeline
-func (c *Client) CreateOrUpdateLogstashPipeline(ctx context.Context, logstashPipeline *LogstashPipeline, ID string) error {
-	// Trick to avoid "definition for this key is missing exception"
-	pipeline := LogstashPipeline{}
+func (c *Client) CreateOrUpdateLogstashPipeline(ctx context.Context, lp *LogstashPipeline) error {
 
-	if len(logstashPipeline.ID) > 0 {
-		copier.Copy(&pipeline, logstashPipeline)
-		pipeline.ID = ""
-	}
-
-	// marshal LogstashPipeline to json
-	json, err := json.Marshal(&pipeline)
-	log.Printf("Voici le message en JSON %s", json)
+	err := checkPrerequisites(lp)
 	if err != nil {
 		return err
 	}
 
-	req, err := http.NewRequest(http.MethodPut, fmt.Sprintf("%s/%s", c.BaseURL, ID), bytes.NewBuffer(json))
+	url := cleanURL(cleanURL(c.BaseURL, crudBaseURL), lp.ID)
+
+	// marshal LogstashPipeline to JSON
+	json, err := json.Marshal(lp.Configuration)
 	if err != nil {
 		return err
 	}
-	log.Printf("Voici la requete %v", req)
+
+	req, err := http.NewRequest(http.MethodPut, url, bytes.NewBuffer(json))
+	if err != nil {
+		return err
+	}
 
 	req = req.WithContext(ctx)
 
@@ -167,14 +215,51 @@ func (c *Client) sendRequest(req *http.Request, v interface{}) error {
 		if err = json.NewDecoder(res.Body).Decode(&errRes); err == nil {
 			return errors.New(errRes.Message)
 		}
-
-		return fmt.Errorf("unknown error, status code: %d", res.StatusCode)
+		errBody, err := ioutil.ReadAll(res.Body)
+		if err != nil {
+			return fmt.Errorf("unknown error, status code: %d", res.StatusCode)
+		}
+		return fmt.Errorf("unknown error, status code: %d, message: %s", res.StatusCode, string(errBody))
 	}
+
 	if v != nil {
 		if err = json.NewDecoder(res.Body).Decode(&v); err != nil {
 			return err
 		}
 	}
 
+	return nil
+}
+
+func (p *LogstashPipeline) String() string {
+	js, err := json.MarshalIndent(p, "", "\t")
+	if err != nil {
+		return ""
+	}
+	return string(js)
+}
+
+func cleanURL(baseURL, suffix string) string {
+	if strings.HasSuffix(baseURL, "/") && strings.HasPrefix(suffix, "/") {
+		return fmt.Sprintf("%s%s", baseURL, trimFirstRune(suffix))
+	}
+	if !strings.HasSuffix(baseURL, "/") && !strings.HasPrefix(suffix, "/") {
+		return fmt.Sprintf("%s/%s", baseURL, suffix)
+	}
+	return fmt.Sprintf("%s%s", baseURL, suffix)
+}
+
+func trimFirstRune(s string) string {
+	_, i := utf8.DecodeRuneInString(s)
+	return s[i:]
+}
+
+func checkPrerequisites(p *LogstashPipeline) error {
+	if len(p.ID) == 0 {
+		return fmt.Errorf("ID cannot be empty")
+	}
+	if len(p.Configuration.Pipeline) == 0 {
+		return fmt.Errorf("pipeline definition cannot be empty")
+	}
 	return nil
 }

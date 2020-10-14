@@ -11,9 +11,9 @@ import (
 )
 
 func TestAccElasticLogstashPipeline_basic(t *testing.T) {
-	var pipelineDef api.LogstashPipeline
-	id := "fake"
+	id := "toto2"
 	pipeline := "test pipeline content"
+	description := "example description"
 
 	resource.Test(t, resource.TestCase{
 		PreCheck:     func() { testAccPreCheck(t) },
@@ -21,15 +21,32 @@ func TestAccElasticLogstashPipeline_basic(t *testing.T) {
 		CheckDestroy: testAccCheckElasticLogstashDestroy,
 		Steps: []resource.TestStep{
 			{
-				Config: testAccCheckElasticLogstashPipelineConfigBasic(id, pipeline),
+				Config: testAccCheckElasticLogstashPipelineConfigBasic(id, pipeline, description),
 				Check: resource.ComposeTestCheckFunc(
-					testAccCheckElasticLogstashPipelineExists("elastic_logstash_pipeline.new", &pipelineDef),
-					//testAccCheckElasticLogstashPipelineAttributes(&pipelineDef, pipeline),
-					//resource.TestCheckResourceAttr("logstash_pipeline.test", "pipeline", pipeline),
+					testAccCheckElasticLogstashPipelineExists("elastic_logstash_pipeline.new"),
+					resource.TestCheckResourceAttr("elastic_logstash_pipeline.new", "pipeline", pipeline),
 				),
 			},
 		},
 	})
+}
+
+func TestAccElasticLogstashPipelineDataSource(t *testing.T) {
+	id := "filebeat"
+	resource.Test(t, resource.TestCase{
+		PreCheck:     func() { testAccPreCheck(t) },
+		Providers:    testAccProviders,
+		CheckDestroy: testAccCheckElasticLogstashDestroy,
+		Steps: []resource.TestStep{
+			{
+				Config: testAccCheckElasticLogstashPipelineConfigDataSource(id),
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr("elastic_logstash_pipeline.filebeat", "description", "pipeline"),
+				),
+			},
+		},
+	})
+
 }
 
 func testAccCheckElasticLogstashDestroy(s *terraform.State) error {
@@ -46,21 +63,30 @@ func testAccCheckElasticLogstashDestroy(s *terraform.State) error {
 		if err == nil {
 			return fmt.Errorf("Task still exists")
 		}
-
 	}
 	return nil
 }
 
-func testAccCheckElasticLogstashPipelineConfigBasic(id, description string) string {
+func testAccCheckElasticLogstashPipelineConfigBasic(id, pipeline, description string) string {
 	return fmt.Sprintf(`
 	resource "elastic_logstash_pipeline" "new" {
 		pipeline_id = "%s"
+		pipeline 	= "%s"
 		description = "%s"
+		settings{}
 	}
-	`, id, description)
+	`, id, pipeline, description)
 }
 
-func testAccCheckElasticLogstashPipelineExists(n string, pipeline *api.LogstashPipeline) resource.TestCheckFunc {
+func testAccCheckElasticLogstashPipelineConfigDataSource(id string) string {
+	return fmt.Sprintf(`
+	data "elastic_logstash_pipeline" "filebeat" {
+		pipeline_id = "%s"
+	  }
+	`, id)
+}
+
+func testAccCheckElasticLogstashPipelineExists(n string) resource.TestCheckFunc {
 	return func(s *terraform.State) error {
 		rs, ok := s.RootModule().Resources[n]
 		if !ok {
@@ -75,8 +101,8 @@ func testAccCheckElasticLogstashPipelineExists(n string, pipeline *api.LogstashP
 
 func testAccCheckElasticLogstashPipelineAttributes(pipeline *api.LogstashPipeline, pipelineDef string) resource.TestCheckFunc {
 	return func(s *terraform.State) error {
-		if pipeline.Pipeline != pipelineDef {
-			return fmt.Errorf("Description does not match: %s", pipeline.Pipeline)
+		if pipeline.Configuration.Pipeline != pipelineDef {
+			return fmt.Errorf("Description does not match: %s", pipeline.Configuration.Pipeline)
 		}
 		return nil
 	}
