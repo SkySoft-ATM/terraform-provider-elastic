@@ -29,8 +29,16 @@ builds:
         goarch: "386"
     binary: "{{ .ProjectName }}_v{{ .Version }}"
 archives:
-  - format: zip
-    name_template: "{{ .ProjectName }}_{{ .Version }}_{{ .Os }}_{{ .Arch }}"
+  - name_template: "{{ .ProjectName }}_{{ .Os }}_{{ .Arch }}"
+    replacements:
+      darwin: darwin
+      linux: linux
+      windows: windows
+      386: i386
+      amd64: x86_64
+    format_overrides:
+      - goos: windows
+        format: zip 
 checksum:
   name_template: "{{ .ProjectName }}_{{ .Version }}_SHA256SUMS"
   algorithm: sha256
