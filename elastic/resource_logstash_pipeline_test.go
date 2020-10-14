@@ -34,14 +34,14 @@ func TestAccElasticLogstashPipeline_basic(t *testing.T) {
 func TestAccElasticLogstashPipelineDataSource(t *testing.T) {
 	id := "filebeat"
 	resource.Test(t, resource.TestCase{
-		PreCheck:     func() { testAccPreCheck(t) },
-		Providers:    testAccProviders,
-		CheckDestroy: testAccCheckElasticLogstashDestroy,
+		PreCheck:                  func() { testAccPreCheck(t) },
+		Providers:                 testAccProviders,
+		PreventPostDestroyRefresh: true,
 		Steps: []resource.TestStep{
 			{
 				Config: testAccCheckElasticLogstashPipelineConfigDataSource(id),
 				Check: resource.ComposeTestCheckFunc(
-					resource.TestCheckResourceAttr("elastic_logstash_pipeline.filebeat", "description", "pipeline"),
+					resource.TestCheckResourceAttr("data.elastic_logstash_pipeline.filebeat", "description", "Pipeline used to consume events from filebeat"),
 				),
 			},
 		},
