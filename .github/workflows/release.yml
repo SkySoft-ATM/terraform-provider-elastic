@@ -22,6 +22,8 @@ jobs:
       env:
         TF_LOG: TRACE
         TF_ACC: 1
+        KIBANA_URL: ${{ secrets.KIBANA_URL }}
+        CLOUD_AUTH: ${{ secrets.CLOUD_AUTH }}
 
     - name: Run goreleaser
       uses: goreleaser/goreleaser-action@v1
