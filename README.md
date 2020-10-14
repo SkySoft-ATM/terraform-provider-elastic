@@ -8,10 +8,13 @@ Requirements
 
 Installation
 ----------------------
+As simple as:
 ```bash
- $ curl -sfL https://raw.githubusercontent.com/SkySoft-ATM/terraform-provider-elastic/master/install.sh | sh
-SkySoft-ATM/terraform-provider-elastic info checking GitHub for latest tag
-SkySoft-ATM/terraform-provider-elastic info found version: 0.0.2 for v0.0.2/darwin/x86_64
+$ curl -sfL https://raw.githubusercontent.com/SkySoft-ATM/terraform-provider-elastic/master/install.sh | sh
+```
+Then
+```bash
+$ terraform init
 ```
 
 Using the provider
