@@ -20,8 +20,8 @@ jobs:
     - name: Test ACC and Unit Test
       run: make testacc
       env:
-        TF_LOG=TRACE
-        TF_ACC=1
+        TF_LOG: TRACE
+        TF_ACC: 1
 
     - name: Run goreleaser
       uses: goreleaser/goreleaser-action@v1
