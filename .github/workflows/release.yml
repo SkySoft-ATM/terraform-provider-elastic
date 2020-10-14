@@ -17,6 +17,12 @@ jobs:
     - name: Build and install
       run: make install
 
+    - name: Test ACC and Unit Test
+      run: make testacc
+      env:
+        TF_LOG=TRACE
+        TF_ACC=1
+
     - name: Run goreleaser
       uses: goreleaser/goreleaser-action@v1
       if: startsWith(github.ref, 'refs/tags/v')
