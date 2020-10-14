@@ -1,4 +1,5 @@
 # Elastic Cloud Provider for Terraform
+![release](https://github.com/SkySoft-ATM/terraform-provider-elastic/workflows/release/badge.svg)
 
 Requirements
 ------------
