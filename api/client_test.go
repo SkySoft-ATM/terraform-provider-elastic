@@ -48,7 +48,7 @@ func TestCreateAndGetPipeline(t *testing.T) {
 
 	res, err := c.GetLogstashPipeline(ctx, pipeline.ID)
 	assert.Nil(t, err, "[ Reading ] expecting nil error")
-	t.Logf("Here is the settings object %v", res.Configuration.Settings)
+
 	assert.Equal(t, pipeline.ID, res.ID, "expecting same IDs")
 	assert.Equal(t, pipeline.Configuration.Description, res.Configuration.Description, "expecting same description")
 	assert.Equal(t, pipeline.Configuration.Settings, res.Configuration.Settings, "expecting same settings")
