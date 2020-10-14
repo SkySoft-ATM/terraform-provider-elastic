@@ -17,6 +17,10 @@ variable "cloud_auth" {
   type = string
 }
 
+variable "cloud_id" {
+  type = string
+}
+
 provider "elastic" {
   kibana_url = var.kibana_url
   cloud_auth = var.cloud_auth
@@ -28,7 +32,10 @@ data "elastic_logstash_pipeline" "filebeat" {
 
 resource "elastic_logstash_pipeline" "test" {
   pipeline_id = "test"
-  pipeline    = "Testons donc tout ça"
+  pipeline = templatefile("${path.module}/pipeline.conf", {
+    CLOUD_ID   = var.cloud_id
+    CLOUD_AUTH = var.cloud_auth
+  })
   description = "Description"
   settings {}
 }

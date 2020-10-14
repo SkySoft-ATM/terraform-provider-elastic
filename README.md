@@ -43,6 +43,27 @@ resource "elastic_logstash_pipeline" "test" {
   } 
 }
 ```
+`pipeline` defintion can be a little be tedious to define inside a JSON, so the `templatefile` [terraform native function](https://www.terraform.io/docs/configuration/functions/templatefile.html) can be used.
+Example below illustrates the usage:
+```hcl
+resource "elastic_logstash_pipeline" "test" {
+  pipeline_id = "test"
+  pipeline = templatefile("${path.module}/pipeline.conf", {
+    CLOUD_ID   = var.cloud_id
+    CLOUD_AUTH = var.cloud_auth
+  })
+  description = "My so great pipeline"
+  settings { // Required even if empty (default values will be used)
+    	batch_delay				= 50
+    	batch_size 				= 125
+	workers 				= 1
+	queue_checkpoint_writes 		= 1024
+	queue_max_bytes 			= "1gb"
+	queue_type 				= "memory"
+  } 
+}
+```
+An example of `pipeline.conf` is available [here](./example/pipeline.conf)
 
 Using data sources
 ----------------------

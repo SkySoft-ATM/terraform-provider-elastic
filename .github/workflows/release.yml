@@ -24,6 +24,7 @@ jobs:
         TF_ACC: 1
         KIBANA_URL: ${{ secrets.KIBANA_URL }}
         CLOUD_AUTH: ${{ secrets.CLOUD_AUTH }}
+        TF_VAR_cloud_id: ${{ secrets.ELASTIC_CLOUD_ID }}
 
     - name: Run goreleaser
       uses: goreleaser/goreleaser-action@v1
