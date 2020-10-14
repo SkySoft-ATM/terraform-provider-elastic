@@ -110,7 +110,6 @@ func resourceLogstashPipelineCreate(ctx context.Context, d *schema.ResourceData,
 	var diags diag.Diagnostics
 
 	data, err := pipelineLogstashData(d)
-	fmt.Printf("[ Create ] - Voici le contenu : %s", data.String())
 
 	if err != nil {
 		return diag.FromErr(err)
@@ -172,7 +171,6 @@ func resourceLogstashPipelineUpdate(ctx context.Context, d *schema.ResourceData,
 
 	if d.HasChange("description") || d.HasChange("pipeline") || d.HasChange("settings") || d.HasChange("username") {
 		data, err := pipelineLogstashData(d)
-		fmt.Printf("[ Update ] - Voici le contenu : %s", data.String())
 		if err != nil {
 			return diag.FromErr(err)
 		}
