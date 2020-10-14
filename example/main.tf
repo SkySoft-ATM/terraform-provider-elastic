@@ -17,7 +17,6 @@ variable "cloud_auth" {
   type = string
 }
 
-
 provider "elastic" {
   kibana_url = var.kibana_url
   cloud_auth = var.cloud_auth
