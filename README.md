@@ -10,11 +10,14 @@ Installation
 ----------------------
 As simple as:
 ```bash
-$ curl -sfL https://raw.githubusercontent.com/SkySoft-ATM/terraform-provider-elastic/master/install.sh | sh
+curl -sfL https://raw.githubusercontent.com/SkySoft-ATM/terraform-provider-elastic/master/install.sh | sh
+chmod +x ./bin/terraform-provider-elastic
+mkdir -p ~/.terraform.d/plugins/hashicorp.com/skysoft-atm/elastic/0.0.2/linux_amd64
+mv ./bin/terraform-provider-elastic ~/.terraform.d/plugins/hashicorp.com/skysoft-atm/elastic/0.0.2/linux_amd64/
 ```
 Then
 ```bash
-$ terraform init
+terraform init
 ```
 
 Using the provider
