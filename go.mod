@@ -14,6 +14,6 @@ require (
 	golang.org/x/tools v0.0.0-20201008025239-9df69603baec // indirect
 	gopkg.in/check.v1 v1.0.0-20200902074654-038fdea0a05b // indirect
 	gopkg.in/yaml.v2 v2.2.8 // indirect
-	gopkg.in/yaml.v3 v3.0.0-20200615113413-eeeca48fe776 // indirect
+	gopkg.in/yaml.v3 v3.0.0 // indirect
 	gotest.tools v2.2.0+incompatible
 )
