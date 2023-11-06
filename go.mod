@@ -4,7 +4,7 @@ go 1.14
 
 require (
 	cloud.google.com/go v0.68.0 // indirect
-	github.com/aws/aws-sdk-go v1.31.9 // indirect
+	github.com/aws/aws-sdk-go v1.34.0 // indirect
 	github.com/hashicorp/hcl/v2 v2.6.0 // indirect
 	github.com/hashicorp/terraform-plugin-sdk/v2 v2.0.4
 	github.com/lithammer/shortuuid/v3 v3.0.4
